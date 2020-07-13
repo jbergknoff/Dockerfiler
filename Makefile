@@ -26,4 +26,4 @@ test:
 	echo TODO
 
 image:
-	echo TODO
+	docker build -t dockerizedtools/dockerfiler:$(version) .

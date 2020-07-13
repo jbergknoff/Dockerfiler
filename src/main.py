@@ -44,9 +44,9 @@ def run(
     registry: registries.DockerRegistry, image_definitions: Dict, should_push=False
 ):
     created_repositories = registry.create_repositories_if_necessary(
-        list(image_definitions["images"].keys())
+        list(image_definitions.keys())
     )
-    if len(created_repositories) > 0:
+    if created_repositories is not None and len(created_repositories) > 0:
         print(f"Created repositories {created_repositories}", file=sys.stderr)
 
     # Fail immediately if any build or push fails. This script's output typically gets piped to bash.
@@ -55,7 +55,7 @@ def run(
     print(
         "Inspecting existing images to know what needs to be built...", file=sys.stderr
     )
-    for repository, definition_list in image_definitions["images"].items():
+    for repository, definition_list in image_definitions.items():
         existing_tags = registry.list_tags_on_repository(repository)
 
         for definition in definition_list:
@@ -74,7 +74,7 @@ def run(
 
 
 def find_definition(image_definitions, repository, tag):
-    for definition in image_definitions["images"][repository]:
+    for definition in image_definitions[repository]:
         if tag in definition["tags"]:
             return definition
 
@@ -101,6 +101,10 @@ if __name__ == "__main__":
         help="Registry username, if required (can alternately be specified with "
         "REGISTRY_USERNAME environment variable)",
     )
+    parser.add_argument(
+        "--repository-prefix",
+        help="Prefix to put on all repository names, e.g. `dockerhubusername/`",
+    )
     args = parser.parse_args()
     should_push = args.push
     target = args.target
@@ -114,16 +118,17 @@ if __name__ == "__main__":
         )
     else:
         registry: Optional[registries.DockerRegistry] = None
-        username = args.username or os.getenv("REGISTRY_USERNAME")
+        username = args.registry_username or os.getenv("REGISTRY_USERNAME")
         password = os.getenv("REGISTRY_PASSWORD")
         if args.registry is None or args.registry == "dockerhub":
             if username is None or password is None:
                 raise Exception(
-                    "Docker Hub requires username and password for querying the registry API"
+                    "Docker Hub requires username and password for querying the registry API. "
+                    "Use --registry-username (or REGISTRY_USERNAME) and REGISTRY_PASSWORD"
                 )
 
             registry = registries.DockerHubRegistry(
-                username=username, password=password
+                username=username, password=password,
             )
         else:
             parsed = urllib.parse.urlparse(args.registry)
@@ -134,14 +139,19 @@ if __name__ == "__main__":
                     )
 
                 registry = registries.ArtifactoryRegistry(
-                    host=parsed.netloc, username=username, password=password
+                    host=parsed.netloc, username=username, password=password,
                 )
             elif parsed.scheme == "ecr":
-                registry = registries.ECRRegistry(host=parsed.netloc)
+                registry = registries.ECRRegistry(host=parsed.netloc,)
             else:
                 raise Exception(f"Unexpected registry specification: {args.registry}")
 
-        if registry is not None:
+        if registry is None:
             raise Exception("No registry specified")
+
+        if args.repository_prefix:
+            image_definitions = {
+                f"{args.repository_prefix}{k}": v for k, v in image_definitions.items()
+            }
 
         run(registry, image_definitions, should_push=should_push)
