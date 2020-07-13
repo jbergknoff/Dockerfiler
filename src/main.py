@@ -93,11 +93,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--registry",
-        help="Registry specification. Omit or `dockerhub` for Docker Hub. Otherwise, `artifactory://<host>` or `ecr://<host>`",
+        help="Registry specification. Omit or `dockerhub` for Docker Hub. "
+        "Otherwise, `artifactory://<host>` or `ecr://<host>`",
     )
     parser.add_argument(
         "--registry-username",
-        help="Registry username, if required (can alternately be specified with REGISTRY_USERNAME environment variable)",
+        help="Registry username, if required (can alternately be specified with "
+        "REGISTRY_USERNAME environment variable)",
     )
     args = parser.parse_args()
     should_push = args.push

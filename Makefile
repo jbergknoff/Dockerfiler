@@ -5,9 +5,16 @@ user_cache_dir := $(HOME)/.cache
 format:
 	$(call run_container, dockerizedtools/black:19.10b0, .)
 
-lint:
+check: check-format check-types check-lint
+
+check-types:
 	$(call run_container, dockerizedtools/mypy:0.782, --ignore-missing-imports src)
-	echo flake8 TODO
+
+check-lint:
+	$(call run_container, dockerizedtools/flake8:3.8.3, --max-line-length 120 --ignore E231 src)
+
+check-format:
+	$(call run_container, dockerizedtools/black:19.10b0, --check .)
 
 vendor:
 	$(call run_container, python:3.8.3-slim-buster, pip install --user -r requirements.txt, \
