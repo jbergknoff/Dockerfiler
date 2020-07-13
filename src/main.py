@@ -111,7 +111,7 @@ if __name__ == "__main__":
             definition, repository, tag, destination=f"{repository}:{tag}"
         )
     else:
-        registry = None
+        registry: Optional[registries.DockerRegistry] = None
         username = args.username or os.getenv("REGISTRY_USERNAME")
         password = os.getenv("REGISTRY_PASSWORD")
         if args.registry is None or args.registry == "dockerhub":
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 username=username, password=password
             )
         else:
-            parsed = urllib.parse.urlparse(registry_specification)
+            parsed = urllib.parse.urlparse(args.registry)
             if parsed.scheme == "artifactory":
                 if username is None or password is None:
                     raise Exception(
@@ -137,9 +137,7 @@ if __name__ == "__main__":
             elif parsed.scheme == "ecr":
                 registry = registries.ECRRegistry(host=parsed.netloc)
             else:
-                raise Exception(
-                    f"Unexpected registry specification: {registry_specification}"
-                )
+                raise Exception(f"Unexpected registry specification: {args.registry}")
 
         if registry is not None:
             raise Exception("No registry specified")

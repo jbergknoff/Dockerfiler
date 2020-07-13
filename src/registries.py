@@ -1,16 +1,25 @@
+from typing import Any
 from typing import List
+from typing import Optional
 
 import boto3
 import requests
 
 
 class DockerRegistry:
-    host: str = None
+    host: str
 
     def list_tags_on_repository(self, repository: str) -> List[str]:
         pass
 
-    def create_repositories_if_necessary(self, repository_list: List[str]) -> None:
+    def create_repositories_if_necessary(self, repository_list: List[str]) -> List[str]:
+        """
+        Some registries lazily create repositories upon push. Those don't do any work here.
+        Otherwise, compare the list of repositories that we want to operate on with the list
+        of repositories which exist, and create any that don't already exist.
+
+        Returns a list of the names of the repositories created.
+        """
         pass
 
     def get_full_image_reference(self, repository: str, tag: str) -> str:
@@ -18,8 +27,8 @@ class DockerRegistry:
 
 
 class ArtifactoryRegistry(DockerRegistry):
-    host: str = None
-    requests_session: requests.Session = None
+    host: str
+    requests_session: requests.Session
 
     def __init__(self, host: str, username: str, password: str):
         self.host = host
@@ -36,14 +45,14 @@ class ArtifactoryRegistry(DockerRegistry):
 
 class DockerHubRegistry(DockerRegistry):
     """
-	Docker Hub API usage following https://success.docker.com/article/how-do-i-authenticate-with-the-v2-api because
-	Docker Hub's API does not follow the API specification here: https://docs.docker.com/registry/spec/api/.
-	For example, the API spec has `GET /v2/{repository}/tags/list`, but that returns a 404, stating
-	that the `list` tag doesn't exist.
-	"""
+    Docker Hub API usage following https://success.docker.com/article/how-do-i-authenticate-with-the-v2-api because
+    Docker Hub's API does not follow the API specification here: https://docs.docker.com/registry/spec/api/.
+    For example, the API spec has `GET /v2/{repository}/tags/list`, but that returns a 404, stating
+    that the `list` tag doesn't exist.
+    """
 
-    host: str = None
-    requests_session: requests.Session = None
+    host: str
+    requests_session: requests.Session
 
     def __init__(self, username: str, password: str):
         self.host = "hub.docker.com"
@@ -64,7 +73,7 @@ class DockerHubRegistry(DockerRegistry):
         self.requests_session.headers.update({"authorization": f"JWT {token}"})
 
     def list_tags_on_repository(self, repository: str) -> List[str]:
-        page_number = 1
+        page_number: Optional[int] = 1
         tags: List[str] = []
         while page_number is not None:
             response = self.requests_session.get(
@@ -94,14 +103,14 @@ class DockerHubRegistry(DockerRegistry):
 
 
 class ECRRegistry(DockerRegistry):
-    host: str = None
-    ecr: botocore.client.ECR = None
+    host: str
+    ecr: Any
 
     def __init__(self, host: str):
         self.host = host
         self.ecr = boto3.client("ecr")
 
-    def create_repositories_if_necessary(self, repository_list):
+    def create_repositories_if_necessary(self, repository_list: List[str]) -> List[str]:
         page_generator = self.ecr.get_paginator("describe_repositories").paginate()
 
         existing_repositories: List[str] = []
