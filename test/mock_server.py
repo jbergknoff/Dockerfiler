@@ -3,11 +3,13 @@ import json
 import os
 import re
 import ssl
-from typing import Callable
 from typing import Dict
+from typing import List
 
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):
+    created_repositories: List[str] = []
+
     def do_GET(self) -> None:
         host = self.headers["host"]
         print(f"Incoming GET request to {host}{self.path}")
@@ -39,17 +41,12 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode("utf8"))
 
-    def send_tag_list(self, repository: str, transformation: Callable) -> None:
+    def get_tag_list(self, repository: str) -> List[str]:
         try:
             with open(f"data/repositories/{repository}.json") as f:
-                tag_list = json.loads(f.read())
-                if transformation:
-                    tag_list = transformation(tag_list)
-
-                self.send_json(200, tag_list)
-        except Exception as e:
-            print(e)
-            self.send_json(404, {"error": f"Invalid repository {repository}"})
+                return json.loads(f.read())
+        except Exception:
+            return []
 
     def do_artifactory_get(self) -> None:
         match = re.search(r"/v2/(.*)/tags/list", self.path)
@@ -61,7 +58,12 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(401, {"error": "basic authorization header required"})
             return
 
-        self.send_tag_list(match[1], lambda tag_list: {"tags": tag_list})
+        tag_list = self.get_tag_list(match[1])
+        status_code = 200
+        if len(tag_list) == 0:
+            status_code = 404
+
+        self.send_json(status_code, {"tags": tag_list})
 
     def do_dockerhub_get(self) -> None:
         match = re.search(r"/v2/repositories/(.*)/tags", self.path)
@@ -73,12 +75,14 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(401, {"error": "authorization header required"})
             return
 
-        self.send_tag_list(
-            match[1],
-            lambda tag_list: {
-                "count": len(tag_list),
-                "results": [{"name": t} for t in tag_list],
-            },
+        tag_list = self.get_tag_list(match[1])
+        status_code = 200
+        if len(tag_list) == 0:
+            status_code = 404
+
+        self.send_json(
+            status_code,
+            {"count": len(tag_list), "results": [{"name": t} for t in tag_list],},
         )
 
     def do_dockerhub_post(self, data: Dict) -> None:
@@ -90,6 +94,10 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(400, {"error": "Send a username and password"})
             return
 
+        if data["username"] == "auth" and data["password"] == "failure":
+            self.send_json(401, {"error": "Invalid credentials"})
+            return
+
         self.send_json(200, {"token": "faketoken"})
 
     def do_ecr_post(self, data: Dict) -> None:
@@ -98,9 +106,10 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         """
         target = (self.headers["x-amz-target"] or "").split(".")[-1]
         if target == "CreateRepository":
+            self.created_repositories.append(str(data.get("repositoryName")))
             self.send_json(200, {})
         elif target == "DescribeRepositories":
-            repositories = []
+            repositories = self.created_repositories.copy()
             root = os.path.join("data", "repositories")
             for path, directories, files in os.walk(root):
                 for file in files:
@@ -113,9 +122,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             )
         elif target == "DescribeImages":
             repository = str(data.get("repositoryName"))
-            self.send_tag_list(
-                repository, lambda tag_list: {"imageDetails": [{"imageTags": tag_list}]}
-            )
+            tag_list = self.get_tag_list(repository)
+            self.send_json(200, {"imageDetails": [{"imageTags": tag_list}]})
         else:
             self.send_json(400, {"error": f"Unexpected request target: {target}"})
 

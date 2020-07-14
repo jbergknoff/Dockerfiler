@@ -83,7 +83,6 @@ class DockerHubRegistry(DockerRegistry):
             )
 
             try:
-                response.raise_for_status()
                 result_data = response.json()
                 page_count = int(result_data["count"])
                 tags += [x["name"] for x in result_data["results"]]
@@ -124,7 +123,7 @@ class ECRRegistry(DockerRegistry):
         created = []
         for repository in repositories_to_create:
             self.ecr.create_repository(repositoryName=repository)
-            created.append(repository)
+            created.append(f"{self.host}/{repository}")
 
         return created
 

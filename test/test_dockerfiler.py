@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import secrets
 import sys
 import unittest
 
@@ -76,7 +77,6 @@ class TestDockerfiler(unittest.TestCase):
                     ],
                 }
             ),
-            repository_prefix=None,
         )
 
         test_cases = [
@@ -119,9 +119,7 @@ class TestDockerfiler(unittest.TestCase):
             with self.subTest(test_case["description"]):
                 with captured_output() as (stdout, stderr):
                     dockerfiler.main.run(
-                        test_case["registry"],
-                        image_definitions,
-                        should_push=test_case.get("should_push") or False,
+                        test_case["registry"], image_definitions,
                     )
 
                 output_lines = [
@@ -129,10 +127,201 @@ class TestDockerfiler(unittest.TestCase):
                 ]
                 self.assertEqual(output_lines, test_case["expected"])
 
+    def test_should_push(self):
+        dockerhub_registry = dockerfiler.registries.get_registry(
+            specification=None, username="z", password="z",
+        )
+
+        image_definitions = dockerfiler.image_definition.ImageDefinitions.from_json(
+            image_definitions_json=json.dumps(
+                {
+                    "myuser/project1": [
+                        {
+                            "type": "build",
+                            "dockerfile_path": "Dockerfile1",
+                            "tags": {
+                                "old1.1": None,
+                                "new1.2": {"FOO_VERSION": "x.y.z",},
+                            },
+                        }
+                    ],
+                }
+            ),
+        )
+
+        expected = [
+            'docker build -t myuser/project1:new1.2 -f Dockerfile1 --build-arg TAG="new1.2" --build-arg FOO_VERSION="x.y.z" .',
+            "docker push myuser/project1:new1.2",
+        ]
+
+        with captured_output() as (stdout, stderr):
+            dockerfiler.main.run(
+                dockerhub_registry, image_definitions, should_push=True,
+            )
+
+        output_lines = [
+            x for x in stdout.getvalue().split("\n") if x.startswith("docker ")
+        ]
+        self.assertEqual(output_lines, expected)
+
+    def test_repository_prefix(self):
+        dockerhub_registry = dockerfiler.registries.get_registry(
+            specification=None, username="z", password="z",
+        )
+
+        image_definitions = dockerfiler.image_definition.ImageDefinitions.from_json(
+            image_definitions_json=json.dumps(
+                {
+                    "project1": [
+                        {
+                            "type": "build",
+                            "dockerfile_path": "Dockerfile1",
+                            "tags": {
+                                "old1.1": None,
+                                "new1.2": {"FOO_VERSION": "x.y.z",},
+                            },
+                        }
+                    ],
+                }
+            ),
+            repository_prefix="myuser/",
+        )
+
+        expected = [
+            'docker build -t myuser/project1:new1.2 -f Dockerfile1 --build-arg TAG="new1.2" --build-arg FOO_VERSION="x.y.z" .',
+        ]
+
+        with captured_output() as (stdout, stderr):
+            dockerfiler.main.run(
+                dockerhub_registry, image_definitions,
+            )
+
+        output_lines = [
+            x for x in stdout.getvalue().split("\n") if x.startswith("docker ")
+        ]
+        self.assertEqual(output_lines, expected)
+
+    def test_create_new_repository(self):
+        host = "123123123123.dkr.ecr.us-east-1.amazonaws.com"
+        ecr_registry = dockerfiler.registries.get_registry(
+            specification=f"ecr://{host}",
+        )
+
+        repository_name = secrets.token_hex(8)
+        image_definitions = dockerfiler.image_definition.ImageDefinitions.from_json(
+            image_definitions_json=json.dumps(
+                {
+                    repository_name: [
+                        {
+                            "type": "build",
+                            "dockerfile_path": "Dockerfile",
+                            "tags": {"new4.1": None,},
+                        }
+                    ],
+                }
+            ),
+        )
+
+        expected = [
+            f'docker build -t {host}/{repository_name}:new4.1 -f Dockerfile --build-arg TAG="new4.1" .',
+        ]
+
+        with captured_output() as (stdout, stderr):
+            dockerfiler.main.run(
+                ecr_registry, image_definitions,
+            )
+
+        assert f"Created repositories ['{host}/{repository_name}']" in stderr.getvalue()
+
+        output_lines = [
+            x for x in stdout.getvalue().split("\n") if x.startswith("docker ")
+        ]
+        self.assertEqual(output_lines, expected)
+
+    def test_invalid_input(self):
+        """
+        There's no need to exhaustively specify the schema here (we can rely on the tests
+        of the `schema` librar). This just verifies that we crash early when the input doesn't
+        follow the schema.
+        """
+
+        invalid_inputs = [
+            [],
+            {"repo": {"type": "build", "dockerfile_path": "a",}},
+        ]
+
+        for invalid_input in invalid_inputs:
+            with self.subTest():
+                exception = None
+                try:
+                    dockerfiler.image_definition.ImageDefinitions.from_json(
+                        image_definitions_json=json.dumps(invalid_input)
+                    )
+                except Exception as e:
+                    exception = e
+
+                assert exception is not None
+
+    def test_authorization_failure(self):
+        with self.subTest("missing credentials"):
+            exception = None
+            try:
+                dockerfiler.registries.get_registry(specification=None, username="z")
+            except Exception as e:
+                exception = e
+
+            assert exception is not None
+
+        with self.subTest("invalid credentials"):
+            exception = None
+            try:
+                dockerfiler.registries.get_registry(
+                    specification=None, username="auth", password="failure",
+                )
+            except Exception as e:
+                exception = e
+
+            assert exception is not None
+            assert "Failed to get access token from Docker Hub" in str(exception)
+
+    def test_missing_repository(self):
+        """
+        For registries that don't require explicit creation of repositories, verify
+        that we don't error out when trying to list tags on a missing repository.
+        """
+
+        dockerhub_registry = dockerfiler.registries.get_registry(
+            specification=None, username="z", password="z",
+        )
+
+        image_definitions = dockerfiler.image_definition.ImageDefinitions.from_json(
+            image_definitions_json=json.dumps(
+                {
+                    "myuser/newproject": [
+                        {
+                            "type": "build",
+                            "dockerfile_path": "Dockerfile",
+                            "tags": {"tag": None,},
+                        }
+                    ],
+                }
+            ),
+        )
+
+        expected = [
+            'docker build -t myuser/newproject:tag -f Dockerfile --build-arg TAG="tag" .',
+        ]
+
+        with captured_output() as (stdout, stderr):
+            dockerfiler.main.run(
+                dockerhub_registry, image_definitions,
+            )
+
+        output_lines = [
+            x for x in stdout.getvalue().split("\n") if x.startswith("docker ")
+        ]
+        self.assertEqual(output_lines, expected)
+
 
 # TODO things to test
-# validation failures
-# repository prefix
-# auth failure
-# should_push
-# error handling (e.g. failure to create repository)
+# error handling (e.g. failure to create repository, failure to list tags). Might make more sense as unit tests
