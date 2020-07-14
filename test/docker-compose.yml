@@ -1,0 +1,38 @@
+version: '3'
+services:
+  mock-server:
+    command: python mock_server.py
+    environment:
+      PYTHONUNBUFFERED: 1
+    image: python:3.8.3-alpine3.12
+    # This mock server listens on a TLS connection with a self-signed cert (see /test/tls)
+    # letting it call itself by the names listed below. The tests running in the sibling
+    # container (`tests`) make network calls as they normally would, but the Docker network
+    # forwards the traffic that would ordinarily go to, e.g., Docker Hub, to this mock
+    # server instead. The test container accepts the self-signed cert because we set
+    # REQUESTS_CA_BUNDLE.
+    networks:
+      default:
+        aliases:
+        - hub.docker.com
+        - fake.jfrog.io
+        - api.ecr.us-east-1.amazonaws.com
+    volumes:
+    - $PWD/test/tls:/tls
+    - $PWD/test:$PWD/test
+    working_dir: $PWD/test
+
+  tests:
+    environment:
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: bogus
+      AWS_SECRET_ACCESS_KEY: bogus
+      PYTHONUSERBASE: vendor
+      REQUESTS_CA_BUNDLE: /tls/cert.pem
+    command: echo
+    image: python:3.8.3-alpine3.12
+    volumes:
+    - $PWD/test/tls:/tls
+    - $PWD:$PWD
+    working_dir: $PWD
+
