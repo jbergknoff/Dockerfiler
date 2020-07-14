@@ -15,10 +15,7 @@ def print_instructions_for_tag(
     definition.print_instructions(tag=tag, destination=destination)
 
     if should_push:
-        print(f"Pushing {destination}", file=sys.stderr)
         print(f"docker push {destination}")
-
-    print(f"Done with {destination}", file=sys.stderr)
 
 
 def run(
@@ -33,7 +30,7 @@ def run(
         print(f"Created repositories {created_repositories}", file=sys.stderr)
 
     # Fail immediately if any build or push fails. This script's output typically gets piped to bash.
-    print("set -e")
+    print("set -ex")
 
     print(
         "Inspecting existing images to know what needs to be built...", file=sys.stderr
