@@ -3,4 +3,5 @@ WORKDIR /opt/dockerfiler
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 COPY dockerfiler .
-ENTRYPOINT ["python", "/opt/dockerfiler/main.py"]
+WORKDIR /opt
+ENTRYPOINT ["python", "-m", "dockerfiler.main"]
