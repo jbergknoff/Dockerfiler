@@ -2,12 +2,12 @@ import argparse
 import os
 import sys
 
-import image_definition
-import registries
+import dockerfiler.image_definition
+import dockerfiler.registries
 
 
 def print_instructions_for_tag(
-    definition: image_definition.ImageDefinition,
+    definition: dockerfiler.image_definition.ImageDefinition,
     tag: str,
     destination: str,
     should_push: bool = False,
@@ -22,8 +22,8 @@ def print_instructions_for_tag(
 
 
 def run(
-    registry: registries.DockerRegistry,
-    image_definitions: image_definition.ImageDefinitions,
+    registry: dockerfiler.registries.DockerRegistry,
+    image_definitions: dockerfiler.image_definition.ImageDefinitions,
     should_push=False,
 ) -> None:
     created_repositories = registry.create_repositories_if_necessary(
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     should_push = args.push
     target = args.target
 
-    image_definitions = image_definition.ImageDefinitions.from_json(
+    image_definitions = dockerfiler.image_definition.ImageDefinitions.from_json(
         image_definitions_json=sys.stdin.read(),
         repository_prefix=args.repository_prefix,
     )
@@ -95,7 +95,7 @@ if __name__ == "__main__":
             definition=definition, tag=tag, destination=f"{repository}:{tag}"
         )
     else:
-        registry = registries.get_registry(
+        registry = dockerfiler.registries.get_registry(
             specification=args.registry,
             username=args.registry_username or os.getenv("REGISTRY_USERNAME"),
             password=os.getenv("REGISTRY_PASSWORD"),

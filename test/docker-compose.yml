@@ -1,0 +1,28 @@
+version: '3'
+services:
+  mock-server:
+    image: ${PYTHON_IMAGE}
+    command: python mock_server.py
+    environment:
+      PYTHONUNBUFFERED: 1
+    volumes:
+    - ./tls:/tls
+    - $PWD:$PWD
+    working_dir: $PWD/test
+    networks:
+      default:
+        aliases:
+        - hub.docker.com
+        - fake.jfrog.io
+        - api.ecr.us-east-1.amazonaws.com
+  tests:
+    environment:
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: bogus
+      AWS_SECRET_ACCESS_KEY: bogus
+      PYTHONUSERBASE: vendor
+      REQUESTS_CA_BUNDLE: /tls/cert.pem
+    volumes:
+    - ./tls:/tls
+    image: ${PYTHON_IMAGE}
+    command: echo

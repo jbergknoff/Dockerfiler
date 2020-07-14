@@ -6,12 +6,12 @@ from typing import Optional
 
 import schema
 
-tag_schema = {"tag": schema.Or(None, {"build_argument": str,})}
+tag_schema = {str: schema.Or(None, {"build_argument": str,})}
 
 image_definition_schema = schema.Schema(
     schema.And(
         {
-            "repository": [
+            str: [
                 schema.Or(
                     schema.And(
                         {
