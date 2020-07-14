@@ -321,7 +321,3 @@ class TestDockerfiler(unittest.TestCase):
             x for x in stdout.getvalue().split("\n") if x.startswith("docker ")
         ]
         self.assertEqual(output_lines, expected)
-
-
-# TODO things to test
-# error handling (e.g. failure to create repository, failure to list tags). Might make more sense as unit tests

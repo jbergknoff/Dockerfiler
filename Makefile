@@ -1,6 +1,6 @@
 container = docker run -i --rm -u $$(id -u):$$(id -g) -v "$$(pwd)":"$$(pwd)" -w "$$(pwd)" $(3) $(1) $(2)
 compose = docker-compose -f test/docker-compose.yml $(1)
-compose_run = $(call compose, run --rm -u $$(id -u):$$(id -g) -v "$$(pwd)":"$$(pwd)" -w "$$(pwd)" $(3) $(1) $(2))
+compose_run = $(call compose, run --rm -u $$(id -u):$$(id -g) $(3) $(1) $(2))
 
 user_cache_dir := $(HOME)/.cache
 
