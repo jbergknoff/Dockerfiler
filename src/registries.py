@@ -1,3 +1,4 @@
+import urllib.parse
 from typing import Any
 from typing import List
 from typing import Optional
@@ -138,3 +139,34 @@ class ECRRegistry(DockerRegistry):
                 tags += image.get("imageTags", [])
 
         return tags
+
+
+def get_registry(
+    specification: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> DockerRegistry:
+    if specification is None or specification == "dockerhub":
+        if username is None or password is None:
+            raise Exception(
+                "Docker Hub requires username and password for querying the registry API. "
+                "Use --registry-username (or REGISTRY_USERNAME) and REGISTRY_PASSWORD"
+            )
+
+        return DockerHubRegistry(username=username, password=password,)
+
+    parsed = urllib.parse.urlparse(specification)
+    if parsed.scheme == "artifactory":
+        if username is None or password is None:
+            raise Exception(
+                "Artifactory requires username and password for querying the registry API"
+            )
+
+        return ArtifactoryRegistry(
+            host=parsed.netloc, username=username, password=password,
+        )
+
+    if parsed.scheme == "ecr":
+        return ECRRegistry(host=parsed.netloc,)
+
+    raise Exception(f"Unexpected registry specification: {specification}")

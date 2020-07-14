@@ -1,8 +1,6 @@
 import argparse
 import os
 import sys
-import urllib.parse
-from typing import Optional
 
 import image_definition
 import registries
@@ -27,7 +25,7 @@ def run(
     registry: registries.DockerRegistry,
     image_definitions: image_definition.ImageDefinitions,
     should_push=False,
-):
+) -> None:
     created_repositories = registry.create_repositories_if_necessary(
         list(image_definitions.keys())
     )
@@ -89,6 +87,7 @@ if __name__ == "__main__":
         image_definitions_json=sys.stdin.read(),
         repository_prefix=args.repository_prefix,
     )
+
     if args.target:
         repository, tag = args.target.split(":")
         definition = image_definitions.find_definition(repository, tag)
@@ -96,36 +95,10 @@ if __name__ == "__main__":
             definition=definition, tag=tag, destination=f"{repository}:{tag}"
         )
     else:
-        registry: Optional[registries.DockerRegistry] = None
-        username = args.registry_username or os.getenv("REGISTRY_USERNAME")
-        password = os.getenv("REGISTRY_PASSWORD")
-        if args.registry is None or args.registry == "dockerhub":
-            if username is None or password is None:
-                raise Exception(
-                    "Docker Hub requires username and password for querying the registry API. "
-                    "Use --registry-username (or REGISTRY_USERNAME) and REGISTRY_PASSWORD"
-                )
-
-            registry = registries.DockerHubRegistry(
-                username=username, password=password,
-            )
-        else:
-            parsed = urllib.parse.urlparse(args.registry)
-            if parsed.scheme == "artifactory":
-                if username is None or password is None:
-                    raise Exception(
-                        "Artifactory requires username and password for querying the registry API"
-                    )
-
-                registry = registries.ArtifactoryRegistry(
-                    host=parsed.netloc, username=username, password=password,
-                )
-            elif parsed.scheme == "ecr":
-                registry = registries.ECRRegistry(host=parsed.netloc,)
-            else:
-                raise Exception(f"Unexpected registry specification: {args.registry}")
-
-        if registry is None:
-            raise Exception("No registry specified")
+        registry = registries.get_registry(
+            specification=args.registry,
+            username=args.registry_username or os.getenv("REGISTRY_USERNAME"),
+            password=os.getenv("REGISTRY_PASSWORD"),
+        )
 
         run(registry, image_definitions, should_push=should_push)
