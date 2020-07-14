@@ -1,37 +1,20 @@
 import argparse
 import os
-import json
 import sys
 import urllib.parse
-from typing import Dict
 from typing import Optional
 
+import image_definition
 import registries
 
 
 def print_instructions_for_tag(
-    definition: Dict,
-    repository: str,
+    definition: image_definition.ImageDefinition,
     tag: str,
     destination: str,
     should_push: bool = False,
 ):
-    if definition["type"] == "mirror":
-        source = f"""{definition['source_image']}:{tag}"""
-        print(f"Pulling {source}", file=sys.stderr)
-        print(f"docker pull {source}")
-        print(f"docker tag {source} {destination}")
-    elif definition["type"] == "build":
-        dockerfile_path = definition["dockerfile_path"]
-        build_context = definition.get("build_context") or "."
-        build_args = {"TAG": tag, **(definition["tags"][tag] or {})}
-        build_args_string = " ".join(
-            [f'--build-arg {k}="{v}"' for k, v in build_args.items()]
-        )
-        print(f"Building {destination} from {dockerfile_path}", file=sys.stderr)
-        print(
-            f"docker build -t {destination} -f {dockerfile_path} {build_args_string} {build_context}"
-        )
+    definition.print_instructions(tag=tag, destination=destination)
 
     if should_push:
         print(f"Pushing {destination}", file=sys.stderr)
@@ -41,7 +24,9 @@ def print_instructions_for_tag(
 
 
 def run(
-    registry: registries.DockerRegistry, image_definitions: Dict, should_push=False
+    registry: registries.DockerRegistry,
+    image_definitions: image_definition.ImageDefinitions,
+    should_push=False,
 ):
     created_repositories = registry.create_repositories_if_necessary(
         list(image_definitions.keys())
@@ -59,26 +44,17 @@ def run(
         existing_tags = registry.list_tags_on_repository(repository)
 
         for definition in definition_list:
-            tags_to_do = set(definition["tags"]) - set(existing_tags)
+            tags_to_do = set(definition.tags) - set(existing_tags)
             if len(tags_to_do) == 0:
                 continue
 
             for tag in tags_to_do:
                 print_instructions_for_tag(
-                    definition,
-                    repository,
-                    tag,
+                    definition=definition,
+                    tag=tag,
                     destination=registry.get_full_image_reference(repository, tag),
                     should_push=should_push,
                 )
-
-
-def find_definition(image_definitions, repository, tag):
-    for definition in image_definitions[repository]:
-        if tag in definition["tags"]:
-            return definition
-
-    raise Exception(f"""Couldn't find definition for {repository}:{tag}""")
 
 
 if __name__ == "__main__":
@@ -109,12 +85,15 @@ if __name__ == "__main__":
     should_push = args.push
     target = args.target
 
-    image_definitions = json.loads(sys.stdin.read())
+    image_definitions = image_definition.ImageDefinitions.from_json(
+        image_definitions_json=sys.stdin.read(),
+        repository_prefix=args.repository_prefix,
+    )
     if args.target:
         repository, tag = args.target.split(":")
-        definition = find_definition(image_definitions, repository, tag)
+        definition = image_definitions.find_definition(repository, tag)
         print_instructions_for_tag(
-            definition, repository, tag, destination=f"{repository}:{tag}"
+            definition=definition, tag=tag, destination=f"{repository}:{tag}"
         )
     else:
         registry: Optional[registries.DockerRegistry] = None
@@ -148,10 +127,5 @@ if __name__ == "__main__":
 
         if registry is None:
             raise Exception("No registry specified")
-
-        if args.repository_prefix:
-            image_definitions = {
-                f"{args.repository_prefix}{k}": v for k, v in image_definitions.items()
-            }
 
         run(registry, image_definitions, should_push=should_push)
