@@ -1,7 +1,5 @@
-python_image = python:3.8.3-slim-buster
-
 container = docker run -i --rm -u $$(id -u):$$(id -g) -v "$$(pwd)":"$$(pwd)" -w "$$(pwd)" $(3) $(1) $(2)
-compose = PYTHON_IMAGE=$(python_image) docker-compose -f test/docker-compose.yml $(1)
+compose = docker-compose -f test/docker-compose.yml $(1)
 compose_run = $(call compose, run --rm -u $$(id -u):$$(id -g) -v "$$(pwd)":"$$(pwd)" -w "$$(pwd)" $(3) $(1) $(2))
 
 user_cache_dir := $(HOME)/.cache
@@ -21,7 +19,8 @@ check-format:
 	$(call container, dockerizedtools/black:19.10b0, --check .)
 
 dependencies:
-	$(call container, python:3.8.3-slim-buster, pip install --user -r requirements.txt, \
+	rm -rf vendor
+	$(call container, python:3.8.3-alpine3.12, pip install --user -r requirements.txt, \
 		-e PYTHONUSERBASE=vendor \
 		-v "$(user_cache_dir)":"$(user_cache_dir)" -e XDG_CACHE_HOME="$(user_cache_dir)")
 
