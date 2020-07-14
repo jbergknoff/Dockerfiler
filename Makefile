@@ -12,10 +12,10 @@ format:
 check: check-format check-types check-lint
 
 check-types:
-	$(call container, dockerizedtools/mypy:0.782, --ignore-missing-imports dockerfiler)
+	$(call container, dockerizedtools/mypy:0.782, --ignore-missing-imports dockerfiler test)
 
 check-lint:
-	$(call container, dockerizedtools/flake8:3.8.3, --max-line-length 120 --ignore E231 dockerfiler)
+	$(call container, dockerizedtools/flake8:3.8.3, dockerfiler test)
 
 check-format:
 	$(call container, dockerizedtools/black:19.10b0, --check .)

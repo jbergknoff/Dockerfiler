@@ -94,8 +94,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
     def do_ecr_post(self, data: Dict) -> None:
         """
-		https://docs.aws.amazon.com/AmazonECR/latest/APIReference/ecr-api.pdf
-		"""
+        https://docs.aws.amazon.com/AmazonECR/latest/APIReference/ecr-api.pdf
+        """
         target = (self.headers["x-amz-target"] or "").split(".")[-1]
         if target == "CreateRepository":
             self.send_json(200, {})
@@ -112,7 +112,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
                 200, {"repositories": [{"repositoryName": r} for r in repositories]}
             )
         elif target == "DescribeImages":
-            repository = data.get("repositoryName")
+            repository = str(data.get("repositoryName"))
             self.send_tag_list(
                 repository, lambda tag_list: {"imageDetails": [{"imageTags": tag_list}]}
             )
