@@ -108,7 +108,7 @@ The image manifest passed in on stdin is a JSON map with repository names as key
 
 Here's a full example:
 
-```json
+```
 {
   "myuser/tool1": [
     {
