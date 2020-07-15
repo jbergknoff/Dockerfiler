@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--push",
         action="store_true",
-        help="If present, push to registries. Otherwise, just build",
+        help="If present, push to registry. Otherwise, just build.",
     )
     parser.add_argument(
         "--registry",

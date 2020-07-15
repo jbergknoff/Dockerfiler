@@ -1,0 +1,27 @@
+name: CI
+
+on: push
+
+jobs:
+  code-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run code checks
+      run: make check
+
+  test:
+    needs: code-check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: make dependencies
+    - name: Test setup
+      run: make test-setup
+    - name: Run tests
+      run: make test
+    - name: Test cleanup
+      run: make test-cleanup
+      if: ${{ always() }}
+

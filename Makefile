@@ -1,3 +1,5 @@
+docker_repository = dockerizedtools/dockerfiler
+
 container = docker run -i --rm -u $$(id -u):$$(id -g) -v "$$(pwd)":"$$(pwd)" -w "$$(pwd)" $(3) $(1) $(2)
 compose = docker-compose -f test/docker-compose.yml $(1)
 compose_run = $(call compose, run --rm -u $$(id -u):$$(id -g) $(3) $(1) $(2))
@@ -28,11 +30,21 @@ test-setup:
 	$(call compose, up -d)
 
 .PHONY: test
-test:
+test: test-functionality test-artifact
+
+test-functionality:
 	$(call compose_run, tests, python -m unittest -v)
+
+test-artifact:
+	$(MAKE) image version=testing
+	docker run --rm $(docker_repository):testing --help
 
 test-cleanup:
 	-$(call compose, down -t 0)
+	-docker rmi $(docker_repository):testing
 
 image:
-	docker build -t dockerizedtools/dockerfiler:$(version) .
+	docker build -t $(docker_repository):$(version) .
+
+image-push:
+	docker push $(docker_repository):$(version)
