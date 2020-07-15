@@ -73,6 +73,11 @@ if __name__ == "__main__":
         "REGISTRY_USERNAME environment variable)",
     )
     parser.add_argument(
+        "--registry-password",
+        help="Registry password, if required (can alternately be specified with "
+        "REGISTRY_PASSWORD environment variable)",
+    )
+    parser.add_argument(
         "--repository-prefix",
         help="Prefix to put on all repository names, e.g. `dockerhubusername/`",
     )
@@ -95,7 +100,7 @@ if __name__ == "__main__":
         registry = dockerfiler.registries.get_registry(
             specification=args.registry,
             username=args.registry_username or os.getenv("REGISTRY_USERNAME"),
-            password=os.getenv("REGISTRY_PASSWORD"),
+            password=args.registry_password or os.getenv("REGISTRY_PASSWORD"),
         )
 
         run(registry, image_definitions, should_push=should_push)
