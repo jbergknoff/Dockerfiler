@@ -5,12 +5,13 @@ on:
     types: [released]
 
 jobs:
-  runs-on: ubuntu-latest
-  steps:
-  - uses: actions/checkout@v2
-  - name: Build artifact
-    run: make image version=${{ github.event.release.tag_name }}
-  - name: Docker login
-    run: docker login --username ${{ secrets.DOCKERHUB_USER }} --password ${{ secrets.DOCKERHUB_PASSWORD }}
-  - name: Push image
-    run: make image-push version=${{ github.event.release.tag_name }}
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build artifact
+      run: make image version=${{ github.event.release.tag_name }}
+    - name: Docker login
+      run: docker login --username ${{ secrets.DOCKERHUB_USER }} --password ${{ secrets.DOCKERHUB_PASSWORD }}
+    - name: Push image
+      run: make image-push version=${{ github.event.release.tag_name }}
