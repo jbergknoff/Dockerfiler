@@ -1,4 +1,4 @@
-# Dockerfiler [https://github.com/jbergknoff/Dockerfiler](GitHub) [https://hub.docker.com/r/dockerizedtools/dockerfiler](Docker Hub)
+# Dockerfiler [GitHub](https://github.com/jbergknoff/Dockerfiler) [Docker Hub](https://hub.docker.com/r/dockerizedtools/dockerfiler)
 
 Dockerfiler is a tool for declaratively managing images built from a set of Dockerfiles.
 
