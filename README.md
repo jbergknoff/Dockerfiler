@@ -6,6 +6,8 @@ This isn't for managing images built from your own projects, which will typicall
 
 Note that Dockerfiler never destroys data. It does not delete repositories/images/tags present in the registry but missing from the manifest passed in. It does not modify image contents if a tag is already present in the registry; it doesn't check content at all, just presence of the tag, and leaves anything alone if it's already there. Dockerfiler will only append to the registry.
 
+Supported registries: Docker Hub, Artifactory, ECR.
+
 ## Example
 
 Dockerfiler takes your image manifest on stdin and prints a sequence of `docker` commands to stdout.
@@ -183,9 +185,13 @@ RUN ...
 
 * **Why use this instead of Docker Hub's automated builds?** Dockerfiler can be used to automate builds/pushes to private registries, including non-Docker-Hub registries.
 
-## Development
+## Contributing
 
-Development in this code repository requires `docker`, `docker-compose`, and `make`.
+Contributions are always appreciated.
+
+#### Development
+
+Development uses `docker`, `docker-compose`, and `make`.
 
 To run tests:
 
@@ -201,7 +207,11 @@ To format and run code checks:
 $ make format check
 ```
 
+See the Makefile for more details.
+
+#### CI
+
 CI happens in GitHub Actions:
 
-* upon any push, code checks and tests run
-* upon release, an artifact is built and pushed to Docker Hub (`dockerizedtools/dockerfiler`)
+* Upon any push, code checks and tests run
+* Upon release, an artifact is built and pushed to Docker Hub (`dockerizedtools/dockerfiler`)
