@@ -4,7 +4,7 @@ Dockerfiler is a tool for declaratively managing a set of images built from Dock
 
 This isn't for managing images built from your own projects, which will typically have their own processes for building and deploying artifacts. Instead, this is for those tools that you use in development or in CI which can benefit from Docker as a distribution mechanism. Docker is an [excellent means of distributing those sorts of tools](https://jonathan.bergknoff.com/journal/run-more-stuff-in-docker/). Dockerfiler helps you maintain a library (public or private) of images that you control.
 
-Note that Dockerfiler never destroys data. It does not delete repositories/images/tags present in the registry but missing from the manifest passed in. It does not modify image contents if a tag is already present in the registry; it doesn't check content at all, just presence of the tag, and leaves anything alone if it's already there. Dockerfiler will only append to the registry.
+Note that Dockerfiler never destroys data. It never deletes repositories/images/tags (even if they're present in the registry but missing from the manifest passed in). It does not modify image contents if a tag is already present in the registry; it doesn't check content at all, just presence of the tag, and leaves anything alone if it's already there. Dockerfiler will only append to the registry.
 
 Supported registries: Docker Hub, Artifactory, ECR.
 
@@ -27,16 +27,16 @@ Suppose we give this **manifest.json** as input to Dockerfiler on stdin:
       }
     }
   ],
-	"myuser/terraform": [
-		{
+  "myuser/terraform": [
+    {
       "type": "mirror",
       "source_reference": "hashicorp/terraform",
       "tags": {
         "0.12.27": null,
         "0.12.28": null
       }
-		}
-	]
+    }
+  ]
 }
 ```
 
@@ -52,7 +52,7 @@ docker tag hashicorp/terraform:0.12.28 myuser/terraform:0.12.28
 docker push myuser/terraform:0.12.28
 ```
 
-The image/tag already in the registry is left alone. Only the new tags gets built and pushed.
+The `myuser/terraform:0.12.27` tag already in the registry is left alone. Only the new tags get built and pushed.
 
 This output is a list of commands which is not executed. Think of it as a dry run. If we actually want to execute these steps, we would pipe that output to a shell where we have credentials to do the `docker push`.
 
@@ -64,8 +64,6 @@ Dockerfiler should be invoked as a Docker image:
 $ alias dockerfiler='docker run -i --rm ... dockerizedtools/dockerfiler'
 $ dockerfiler --registry-username myuser | bash
 ```
-
-You'll normally run this in
 
 Docker Hub, Artifactory and ECR are supported as registries. Dockerfiler's interaction with the registries is limited to
 
@@ -80,8 +78,8 @@ TODO: example usage in a Dockerfile repo, explaining how to use Dockerfiler in C
 
 * `--registry [specification]`: what Docker registry to point at.
   * Docker Hub: omit this or specify `dockerhub`
-  * Artifactory: `artifactory://<host>` (e.g. `artifactory://yourdomain.jfrog.io`)
-  * ECR: `ecr://<host>` (e.g. `ecr://0123456789012.dkr.ecr.us-east-1.amazonaws.com`)
+  * Artifactory: `artifactory://<host>` (e.g. `--registry artifactory://yourdomain.jfrog.io`)
+  * ECR: `ecr://<host>` (e.g. `--registry ecr://0123456789012.dkr.ecr.us-east-1.amazonaws.com`)
 
     Only one registry is supported at a time. To push to multiple registries, call Dockerfiler more than once with different registry specifications.
 
@@ -110,7 +108,7 @@ The image manifest passed in on stdin is a JSON map with repository names as key
 
 Here's a full example:
 
-```
+```json
 {
   "myuser/tool1": [
     {
