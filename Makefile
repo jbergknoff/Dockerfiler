@@ -36,7 +36,7 @@ test-functionality:
 	$(call compose_run, tests, python -m unittest -v)
 
 test-artifact:
-	make image version=testing
+	$(MAKE) image version=testing
 	docker run --rm $(docker_repository):testing --help
 
 test-cleanup:
@@ -45,3 +45,6 @@ test-cleanup:
 
 image:
 	docker build -t $(docker_repository):$(version) .
+
+image-push:
+	docker push $(docker_repository):$(version)
