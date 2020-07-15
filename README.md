@@ -1,4 +1,4 @@
-# Dockerfiler
+# Dockerfiler ([GitHub](https://github.com/jbergknoff/Dockerfiler)) ([Docker Hub](https://hub.docker.com/r/dockerizedtools/dockerfiler))
 
 Dockerfiler is a tool for declaratively managing images built from a set of Dockerfiles.
 
@@ -43,7 +43,7 @@ Suppose we give this **manifest.json** as input to Dockerfiler on stdin:
 and suppose that `myuser/terraform:0.12.27` already exists in our registry, but `myuser/openssl:1.1.1g` and `myuser/terraform:0.12.28` don't. We invoke Dockerfiler:
 
 ```sh
-$ docker run -i --rm dockerizedtools/dockerfiler --push < manifest.json
+$ docker run -i --rm dockerizedtools/dockerfiler:v0.1.0 --push < manifest.json
 set -ex
 docker build -t myuser/openssl:1.1.1g --build-arg TAG="1.1.1g" --build-arg PACKAGE_VERSION="1.1.1g-r0" -f openssl.Dockerfile .
 docker push myuser/openssl:1.1.1g
@@ -61,7 +61,7 @@ This output is a list of commands which is not executed. Think of it as a dry ru
 Dockerfiler should be invoked as a Docker image:
 
 ```sh
-$ alias dockerfiler='docker run -i --rm ... dockerizedtools/dockerfiler'
+$ alias dockerfiler='docker run -i --rm ... dockerizedtools/dockerfiler:v0.1.0'
 $ dockerfiler --registry-username myuser | bash
 ```
 
@@ -87,7 +87,7 @@ TODO: example usage in a Dockerfile repo, explaining how to use Dockerfiler in C
   * ECR doesn't require a username, but AWS credentials must be provided instead. Usually, this will be via environment variables `AWS_ACCESS_KEY_ID`/etc. or `AWS_PROFILE`. Please be aware that these will need to be made available in the container running Dockerfiler. That may look like:
 
     ```sh
-    $ docker run -i --rm -v ~/.aws:/.aws -u $(id -u):$(id -g) -e AWS_PROFILE dockerizedtools/dockerfiler ...
+    $ docker run -i --rm -v ~/.aws:/.aws -u $(id -u):$(id -g) -e AWS_PROFILE dockerizedtools/dockerfiler:v0.1.0 ...
     ```
   * This can alternately be supplied as an environment variable `REGISTRY_USERNAME`.
 
@@ -212,4 +212,4 @@ See the Makefile for more details.
 CI happens in GitHub Actions:
 
 * Upon any push, code checks and tests run
-* Upon release, an artifact is built and pushed to Docker Hub (`dockerizedtools/dockerfiler`)
+* Upon release, an artifact is built and pushed to Docker Hub ([dockerizedtools/dockerfiler](https://hub.docker.com/r/dockerizedtools/dockerfiler))
