@@ -1,5 +1,7 @@
 # Dockerfiler ([GitHub](https://github.com/jbergknoff/Dockerfiler)) ([Docker Hub](https://hub.docker.com/r/dockerizedtools/dockerfiler))
 
+[![Latest version](https://img.shields.io/github/v/release/jbergknoff/Dockerfiler.svg)](https://github.com/jbergknoff/Dockerfiler/releases)
+
 Dockerfiler is a tool for declaratively managing images built from a set of Dockerfiles.
 
 This isn't for managing images built from your own projects, which will typically have their own processes for building and deploying artifacts. Instead, this is for those tools that you use in development or in CI which can benefit from Docker as a distribution mechanism. Docker is an [excellent means of distributing those sorts of tools](https://jonathan.bergknoff.com/journal/run-more-stuff-in-docker/). Dockerfiler helps you maintain a library (public or private) of images that you control.
