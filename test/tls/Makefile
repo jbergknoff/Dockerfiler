@@ -1,5 +1,5 @@
 openssl = docker run -i --rm -v "$$(pwd)":"$$(pwd)" -w "$$(pwd)" -u $$(id -u):$$(id -g) $(2) \
-	dockerizedtools/openssl:1.1.1g-r0 $(1)
+	dockerizedtools/openssl:1.1.1g $(1)
 
 # Generate a self-signed certificate (cert.pem) and private key (key.pem)
 # Based off of https://serverfault.com/a/845788
