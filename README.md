@@ -2,11 +2,11 @@
 
 [![Latest version](https://img.shields.io/github/v/release/jbergknoff/Dockerfiler.svg)](https://github.com/jbergknoff/Dockerfiler/releases)
 
-Dockerfiler is a tool for declaratively managing images built from a set of Dockerfiles.
-
-See it in action in on [the dockerized-tools repo](https://github.com/jbergknoff/dockerized-tools), managing the images found [here](https://hub.docker.com/u/dockerizedtools).
+Dockerfiler is a tool for declaratively managing images built from a set of Dockerfiles. Basically, it can help you manage a "Dockerfile" repo where you build any tools you want into images that you control
 
 This isn't for managing images built from your own projects, which will typically have their own processes for building and deploying artifacts. Instead, this is for those tools that you use in development or in CI which can benefit from Docker as a distribution mechanism. Docker is an [excellent means of distributing those sorts of tools](https://jonathan.bergknoff.com/journal/run-more-stuff-in-docker/). Dockerfiler helps you maintain a library (public or private) of images that you control.
+
+See it in action in on [the dockerized-tools repo](https://github.com/jbergknoff/dockerized-tools), managing the images found [here](https://hub.docker.com/u/dockerizedtools).
 
 Note that Dockerfiler never destroys data. It never deletes repositories/images/tags (even if they're present in the registry but missing from the manifest passed in). It does not modify image contents if a tag is already present in the registry; it doesn't check content at all, just presence of the tag, and leaves anything alone if it's already there. Dockerfiler will only append to the registry.
 
